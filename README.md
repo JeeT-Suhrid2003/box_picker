@@ -239,3 +239,9 @@ This means:
 ## License
 
 This project is for demo and learning purposes.
+
+## What I learnt from this project
+
+1. structured way of building
+2. reporting/ documenting since I generally skip most part and keep it a simple readme only
+3. rest I have already worked on these tech so more understanding on them
