@@ -3,6 +3,7 @@ import logging
 import os
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 from core.models import BoxCategory
 
@@ -15,11 +16,33 @@ VALID_CATEGORIES = [
     BoxCategory.HEAVY_DUTY,
     BoxCategory.LIQUID,
 ]
+GEMINI_MODEL = "gemini-3.5-flash"
+
+
+def _read_api_key() -> str:
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if api_key:
+        return api_key
+
+    env_path = Path(__file__).resolve().parents[2] / ".env"
+    if env_path.exists():
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            if not line or line.strip().startswith("#"):
+                continue
+            key, separator, value = line.partition("=")
+            if not separator:
+                continue
+            key = key.strip()
+            if key in {"GEMINI_API_KEY", "GOOGLE_API_KEY"}:
+                api_key = value.strip().strip('"').strip("'")
+                os.environ[key] = api_key
+                return api_key
+    return ""
 
 
 def call_gemini_for_category(title: str, description: str = "") -> str:
     """Call Gemini to classify a product into a valid box category."""
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = _read_api_key()
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not set")
 
@@ -37,8 +60,7 @@ def call_gemini_for_category(title: str, description: str = "") -> str:
         },
     }
 
-    # Use a model name that is valid for the Google Generative AI endpoint.
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
     request = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
@@ -49,7 +71,12 @@ def call_gemini_for_category(title: str, description: str = "") -> str:
     with urllib.request.urlopen(request, timeout=20) as response:
         body = json.loads(response.read().decode("utf-8"))
 
-    text = body["candidates"][0]["content"]["parts"][0]["text"]
+    text = body["candidates"][0]["content"]["parts"][0]["text"].strip()
+    if text.startswith("```"):
+        text = text.strip("`")
+        if text.lower().startswith("json"):
+            text = text[4:].lstrip()
+
     parsed = json.loads(text)
     category = parsed.get("category")
     if category not in VALID_CATEGORIES:
@@ -61,6 +88,13 @@ def classify_product_category(title: str, description: str = "") -> str:
     """Best-effort classification using Gemini. Falls back to STANDARD on any failure."""
     try:
         return call_gemini_for_category(title, description)
-    except (RuntimeError, ValueError, urllib.error.URLError, json.JSONDecodeError):
+    except (
+        RuntimeError,
+        ValueError,
+        TimeoutError,
+        urllib.error.URLError,
+        json.JSONDecodeError,
+        OSError,
+    ):
         logger.exception("Gemini category classification failed; fallback to STANDARD")
         return BoxCategory.STANDARD
