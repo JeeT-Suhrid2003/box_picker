@@ -28,4 +28,4 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; else pip install django; fi
 
       - name: Run Django tests
-        run: python -m django test core --verbosity 2
+        run: python manage.py test core --verbosity 2
