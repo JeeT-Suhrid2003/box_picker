@@ -1,3 +1,6 @@
+import os
+from unittest.mock import patch
+
 from django.test import TestCase
 from rest_framework.test import APIClient
 
@@ -26,6 +29,11 @@ class BoxRecommendationTests(TestCase):
             cost=30.00,
             allowed_categories=[BoxCategory.FRAGILE, BoxCategory.LIQUID],
         )
+
+    def test_product_category_uses_gemini_when_available(self):
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}, clear=False):
+            with patch("core.services.ai_classifier.call_gemini_for_category", return_value=BoxCategory.FRAGILE):
+                self.assertEqual(classify_product_category("Glass bottle", "fragile"), BoxCategory.FRAGILE)
 
     def test_product_category_falls_back_to_standard(self):
         self.assertEqual(classify_product_category("random product"), BoxCategory.STANDARD)
