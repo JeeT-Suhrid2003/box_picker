@@ -127,8 +127,6 @@ Chat Transcript: Save your raw chat logs directly from your tool session without
 
 TEST_OUTPUT.md & Test Suite: Write unit tests covering manual category assignment, LLM mock fallbacks, edge-case dimensions, and cost minimization.
 
-Why did the database administrator leave his wife?
-She had one-to-many relationships and zero integrity constraints.
 
 
 copilot:
