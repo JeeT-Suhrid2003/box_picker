@@ -217,6 +217,23 @@ The recommendation engine:
 python manage.py test core --verbosity 2
 ```
 
+## CI/CD
+
+GitHub Actions runs Django checks and tests for pull requests and pushes. A push to `main` also:
+
+1. builds the Docker image
+2. publishes immutable `${GITHUB_SHA}` and `latest` tags to Docker Hub
+3. updates the Kubernetes deployment to the immutable image
+4. waits for the rollout to complete
+
+Configure these GitHub repository secrets before enabling deployment:
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `KUBE_CONFIG`
+
+The Kubernetes manifest is in `deployment.yml`. Create the `box-picker-secrets` secret with `DJANGO_SECRET_KEY`; add `GEMINI_API_KEY` if AI classification is required.
+
 ## Troubleshooting
 
 ### No compatible box found
