@@ -91,16 +91,26 @@ jobs:
     needs: publish
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Configure kubectl
+        if: env.KUBE_CONFIG != 'None'
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
       - name: Deploy immutable image
-        if : success()
+        if: env.KUBE_CONFIG != 'None' && success()
         run: kubectl set image deployment/box-picker box-picker=${IMAGE_NAME}:${GITHUB_SHA}
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
       - name: Wait for rollout
-        if : success()
+        if: env.KUBE_CONFIG != 'None' && success()
         run: kubectl rollout status deployment/box-picker --timeout=120s
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
