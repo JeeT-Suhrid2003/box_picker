@@ -87,7 +87,7 @@ jobs:
 
   deploy:
     name: Deploy to Kubernetes
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.KUBE_CONFIG != 'None'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: publish
     runs-on: ubuntu-latest
     steps:
@@ -98,7 +98,9 @@ jobs:
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
       - name: Deploy immutable image
+        if : success()
         run: kubectl set image deployment/box-picker box-picker=${IMAGE_NAME}:${GITHUB_SHA}
 
       - name: Wait for rollout
+        if : success()
         run: kubectl rollout status deployment/box-picker --timeout=120s
