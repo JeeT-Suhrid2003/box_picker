@@ -87,7 +87,7 @@ jobs:
 
   deploy:
     name: Deploy to Kubernetes
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.KUBE_CONFIG != 'None'
     needs: publish
     runs-on: ubuntu-latest
     steps:
